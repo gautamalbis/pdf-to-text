@@ -6,10 +6,21 @@ from PIL import Image
 import subprocess
 import cv2
 
-image = cv2.imread("image.jpg")
+'''image = cv2.imread("image.jpg")
 grayscale_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 ret, thresh_image = cv2.threshold(grayscale_image, 127, 255, cv2.THRESH_BINARY)
 cv2.imwrite("processed_image.png", thresh_image)
+ height, width, _ = image.shape 
+    estimated_dpi = (desired_dpi * 25.4) / max(height, width) 
+    new_width, new_height = (int(width * desired_dpi / estimated_dpi), int(height * desired_dpi / estimated_dpi))
+
+    if estimated_dpi < desired_dpi:
+        pil_image = Image.open(image_path)
+        resized_image = pil_image.resize((new_width, new_height), Image.ANTIALIAS)
+        resized_image.save("resized_" + image_path)
+        print(f"Image resized to approximately {estimated_dpi:.2f} DPI.")
+    else:
+        print(f"Image DPI is already at least {estimated_dpi:.2f} (estimated).")'''
 
 def extract_image_text(image_filename):
     output=image_filename
