@@ -4,28 +4,16 @@ import io
 import magic
 from PIL import Image
 import subprocess
+from io import StringIO
 import cv2
 
-'''image = cv2.imread("image.jpg")
-grayscale_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-ret, thresh_image = cv2.threshold(grayscale_image, 127, 255, cv2.THRESH_BINARY)
-cv2.imwrite("processed_image.png", thresh_image)
- height, width, _ = image.shape 
-    estimated_dpi = (desired_dpi * 25.4) / max(height, width) 
-    new_width, new_height = (int(width * desired_dpi / estimated_dpi), int(height * desired_dpi / estimated_dpi))
 
-    if estimated_dpi < desired_dpi:
-        pil_image = Image.open(image_path)
-        resized_image = pil_image.resize((new_width, new_height), Image.ANTIALIAS)
-        resized_image.save("resized_" + image_path)
-        print(f"Image resized to approximately {estimated_dpi:.2f} DPI.")
-    else:
-        print(f"Image DPI is already at least {estimated_dpi:.2f} (estimated).")'''
+
 
 def extract_image_text(image_filename):
     output=image_filename
     print("yes")
-    tesseract_cmd=f"tesseract {image_filename}.png {output}"
+    tesseract_cmd=f"tesseract {image_filename}_processed.png {output}"
     try:
         subprocess.run(tesseract_cmd,shell=True,check=True,stderr=subprocess.DEVNULL)
         print("Ocr was completed")
@@ -54,11 +42,37 @@ def extract_text_from_pdf(pdf_path):
                     image_filename = f"image_{page_number}_{img_index}.{image_format.split('/')[-1]}"
                     with open(image_filename, "wb") as f:
                         f.write(img_bytes)
-                    
-                    img=Image.open(image_filename).convert('RGB')
+                    if image_filename.split(".")[-1]=="octet-stream":
+                        img=Image.open(StringIO.StringIo(image_filename))
+                        print(img.size,"octet")
+                    else:
+                        img=Image.open(image_filename).convert('RGB')
+                    desired_dpi=100
                     image_filename=image_filename.split('.')[0]
                     img.save(f'{image_filename}.png')
+                    #pre processing
+                    image_filename=f'{image_filename}.png'
+
+                    image = cv2.imread(image_filename)
+                    height, width, _ = image.shape 
+                    estimated_dpi = (desired_dpi * 25.4) / max(height, width) 
+                    new_width, new_height = (int(width * desired_dpi / estimated_dpi), int(height * desired_dpi / estimated_dpi))
                     
+                    if estimated_dpi < desired_dpi:
+                        print(estimated_dpi,image_filename)
+                        pil_image = Image.open(image_filename)
+                        #print(pil_image)
+                        resized_image = pil_image.resize((new_width, new_height),resample=Image.Resampling.LANCZOS)
+                        print(resized_image.size)
+                        resized_image.save("pp"+image_filename)
+                        print(image_filename)
+                        print(f"Image resized to approximately {estimated_dpi:.2f} DPI.")
+                    else:
+                        print(f"Image DPI is already at least {estimated_dpi:.2f} (estimated).")
+                    
+                    grayscale_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+                    ret, thresh_image = cv2.threshold(grayscale_image, 127, 255, cv2.THRESH_BINARY)
+                    cv2.imwrite(f"{image_filename}_processed.png", thresh_image)
             
                     print(image_filename)
                     tt=extract_image_text(image_filename)
@@ -80,7 +94,7 @@ def extract_text_from_pdf(pdf_path):
         return text
 
 if __name__ == "__main__":
-    pdf_path = "machine_article.pdf"
+    pdf_path = "Sharma.pdf"
     extracted_data = extract_text_from_pdf(pdf_path)
     
     print(extracted_data)
