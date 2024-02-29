@@ -11,9 +11,9 @@ import cv2
 
 
 def extract_image_text(image_filename):
-    output=image_filename
+    output=image_filename.split(".")[0]
     print("yes")
-    tesseract_cmd=f"tesseract {image_filename}_processed.png {output}"
+    tesseract_cmd=f"tesseract {image_filename} {output}"
     try:
         subprocess.run(tesseract_cmd,shell=True,check=True,stderr=subprocess.DEVNULL)
         print("Ocr was completed")
@@ -23,6 +23,28 @@ def extract_image_text(image_filename):
             return text_data
     except subprocess.CalledProcessError as e:
         print(f'Ocr failed error: {e}')
+
+def resize_image(image_path,target_dpi=300):
+  print(image_path,"resize_image")
+  image = Image.open(f'{image_path}.png')
+  print(image.size)
+  ori_dpi = max(image.info.get('dpi', (72, 72)))
+  factor = min(target_dpi / ori_dpi, 2)
+
+  new_width = int(image.width * factor)
+  new_height = int(image.height * factor)
+  resized_image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+  print(resized_image.size)
+  resized_image.save(f"{image_path}_pp.png")
+  image = cv2.imread(f"{image_path}_pp.png")
+  #print(image)
+  grayscale_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+  ret, thresh_image = cv2.threshold(grayscale_image, 127, 255, cv2.THRESH_BINARY)
+  print(thresh_image)
+  cv2.imwrite(f"{image_path}_processed.png", thresh_image)
+  print("done")
+  cv2.destroyAllWindows()
+  return f"{image_path}_processed.png"
 
 def extract_text_from_pdf(pdf_path):
     with pdfplumber.open(pdf_path) as pdf:
@@ -47,35 +69,15 @@ def extract_text_from_pdf(pdf_path):
                         print(img.size,"octet")
                     else:
                         img=Image.open(image_filename).convert('RGB')
-                    desired_dpi=100
+                    desired_dpi=300
                     image_filename=image_filename.split('.')[0]
                     img.save(f'{image_filename}.png')
                     #pre processing
-                    image_filename=f'{image_filename}.png'
+                    pre_process=resize_image(image_filename,desired_dpi)
 
-                    image = cv2.imread(image_filename)
-                    height, width, _ = image.shape 
-                    estimated_dpi = (desired_dpi * 25.4) / max(height, width) 
-                    new_width, new_height = (int(width * desired_dpi / estimated_dpi), int(height * desired_dpi / estimated_dpi))
-                    
-                    if estimated_dpi < desired_dpi:
-                        print(estimated_dpi,image_filename)
-                        pil_image = Image.open(image_filename)
-                        #print(pil_image)
-                        resized_image = pil_image.resize((new_width, new_height),resample=Image.Resampling.LANCZOS)
-                        print(resized_image.size)
-                        resized_image.save("pp"+image_filename)
-                        print(image_filename)
-                        print(f"Image resized to approximately {estimated_dpi:.2f} DPI.")
-                    else:
-                        print(f"Image DPI is already at least {estimated_dpi:.2f} (estimated).")
-                    
-                    grayscale_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-                    ret, thresh_image = cv2.threshold(grayscale_image, 127, 255, cv2.THRESH_BINARY)
-                    cv2.imwrite(f"{image_filename}_processed.png", thresh_image)
-            
+
                     print(image_filename)
-                    tt=extract_image_text(image_filename)
+                    tt=extract_image_text(pre_process)
 
                     text+=tt
 
@@ -88,7 +90,7 @@ def extract_text_from_pdf(pdf_path):
         match_file=[file for file in allfiles if file.startswith(prefix)]
         for ff in match_file:
             file_path=os.path.join(directory,ff)
-            os.remove(file_path)
+            #os.remove(file_path)
 
 
         return text
@@ -96,5 +98,5 @@ def extract_text_from_pdf(pdf_path):
 if __name__ == "__main__":
     pdf_path = "Sharma.pdf"
     extracted_data = extract_text_from_pdf(pdf_path)
-    
+
     print(extracted_data)
