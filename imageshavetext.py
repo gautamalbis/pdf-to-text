@@ -12,7 +12,7 @@ import fitz
 def extract_image_text(image_filename):
     output=image_filename.split(".")[0]
     print("yes")
-    tesseract_cmd=f"tesseract {image_filename} {output} --psm 6"
+    tesseract_cmd=f"tesseract {image_filename} {output}"
     try:
         subprocess.run(tesseract_cmd,shell=True,check=True,stderr=subprocess.DEVNULL)
         print("Ocr was completed")
@@ -26,14 +26,14 @@ def extract_image_text(image_filename):
 def resize_image(image_path,target_dpi=300):
   print(image_path,"resize_image")
   image = Image.open(image_path)
-  print(image.size)
+  #print(image.size)
   ori_dpi = max(image.info.get('dpi', (72, 72)))
   factor = min(target_dpi / ori_dpi, 2)
 
   new_width = int(image.width * factor)
   new_height = int(image.height * factor)
   resized_image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
-  print(resized_image.size)
+  #print(resized_image.size)
   resized_image.save(image_path)
   '''image = cv2.imread(image_path)
   #print(image)
@@ -67,7 +67,7 @@ def extract_image_from_pdf(doc,page_num,image_list):
         img.save(img_file_path)
         pre_process=resize_image(img_file_path,300)
         tt=extract_image_text(pre_process)
-        if tt:
+        if tt and len(tt)>2:
             text_image.append(tt)
         else:
             empty_data.append(img_file_path)
@@ -82,18 +82,19 @@ def extract_text_from_pdf(pdf_path,directory):
         text += page.get_text()
         image_list = page.get_images(full=True)
         textlist,emptylist=extract_image_from_pdf(doc,page_num,image_list)
-        text+=textlist
+        print(textlist)
+        print("Empytlist here:-")
         print(emptylist)
 
                     
     ##remove all images from directory
-    remove_allImages(directory)
+    #remove_allImages(directory)
 
     doc.close()
     return text
 
 if __name__ == "__main__":
-    pdf_path = "pp.pdf"
+    pdf_path = "e-MB.pdf"
     directory = 'output_folder'
     if not os.path.exists(directory):
         os.makedirs(directory)
