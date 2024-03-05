@@ -46,13 +46,14 @@ def resize_image(image_path,target_dpi=300):
   return image_path
 
 
-def remove_allImages(directory):
+def remove_allImages(directory,empyt):
     prefix="page"
     allfiles=os.listdir(directory)
     match_file=[file for file in allfiles if file.startswith(prefix)]
     for ff in match_file:
         file_path=os.path.join(directory,ff)
-        os.remove(file_path)
+        if ff not in empyt:
+            os.remove(file_path)
 
 
 def extract_image_from_pdf(doc,page_num,image_list):
@@ -60,7 +61,7 @@ def extract_image_from_pdf(doc,page_num,image_list):
     empty_data=[]
     for img_index, img_info in enumerate(image_list):
         img_index += 1
-        print(img_info[0])
+        #print(img_info[0])
         img = fitz.Pixmap(doc, img_info[0])
         output_folder=directory
         img_file_path = f"{output_folder}/page{page_num + 1}_img{img_index}.png"
@@ -77,27 +78,32 @@ def extract_image_from_pdf(doc,page_num,image_list):
 def extract_text_from_pdf(pdf_path,directory):
     doc = fitz.open(pdf_path)
     text=""
+    empyt=[]
     for page_num in range(doc.page_count):
         page = doc[page_num]
         text += page.get_text()
         image_list = page.get_images(full=True)
         textlist,emptylist=extract_image_from_pdf(doc,page_num,image_list)
-        print(textlist)
+        #print(textlist)
         print("Empytlist here:-")
-        print(emptylist)
+        if len(emptylist)!=0:
+            for i in emptylist:
+                i=i.split("/")[1]
+                empyt.append(i)
 
-                    
+    print(empyt)             
     ##remove all images from directory
-    #remove_allImages(directory)
+    
+    remove_allImages(directory,empyt)
 
     doc.close()
     return text
 
 if __name__ == "__main__":
-    pdf_path = "e-MB.pdf"
+    pdf_path = "machine_article.pdf"
     directory = 'output_folder'
     if not os.path.exists(directory):
         os.makedirs(directory)
     extracted_data = extract_text_from_pdf(pdf_path,directory)
 
-    print(extracted_data)
+    #print(extracted_data)
